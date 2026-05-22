@@ -1,0 +1,22 @@
+{
+    "name": "王苡翔",
+    "department": "ITD1",
+    "responsibilities": [
+        {
+            "poject": "供應鏈管理系統",
+            "description": "主要用於管理供應商、採購訂單、送貨作業、檢驗管理及供應商評核等供應鏈相關業務流程"
+        },
+        {
+            "poject": "兩岸供應鏈交易平台",
+            "description": "用於 BD 廠與廈門廠之間的一般貿易交易流程設計的企業級系統，提供完整的報價、包裝、發票管理功能"
+        },
+        {
+            "poject": "重電外銷 AI 助理",
+            "description": "AI 銷售顧問，提供客戶重電產品的詳細說明、使用方式、業務聯絡、技術支援及參考資料"
+        }
+    ],
+    "skills": [
+        "全端開發工程師 (C#、.Net、javascript、vue...)",
+        "AI 應用工程師 (RAG、MCP Server)"
+    ]
+}

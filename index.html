@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Dashboard</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --page-bg: #1F1F1E;
+            --surface-bg: #1F1F1E;
+            --surface-bg-strong: #252524;
+            --surface-bg-elevated: #1A1A19;
+            --surface-border: rgba(195, 194, 169, 0.2);
+            --surface-border-strong: rgba(195, 194, 169, 0.42);
+            --text-primary: #C5A471;
+            --text-secondary: #C3C2A9;
+            --accent-primary: #D97757;
+            --accent-secondary: #D97757;
+            --accent-soft: rgba(217, 119, 87, 0.2);
+            --line-ivory: #C3C2A9;
+            --line-ivory-strong: #C3C2A9;
+            --node-bg: #1F1F1E;
+            --node-bg-hover: rgba(217, 119, 87, 0.12);
+            --node-bg-active: rgba(217, 119, 87, 0.16);
+            --node-border: rgba(195, 194, 169, 0.36);
+            --node-border-hover: rgba(217, 119, 87, 0.68);
+            --node-border-active: rgba(217, 119, 87, 0.9);
+            --connector: #C3C2A9;
+            --connector-active: #C3C2A9;
+            --overlay-bg: rgba(10, 10, 10, 0.74);
+            --shadow-soft: 0 8px 20px rgba(0, 0, 0, 0.26);
+            --shadow-strong: 0 28px 80px rgba(0, 0, 0, 0.55);
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --radius-md: 16px;
+            --font-title: 52px;
+            --font-subtitle: 46px;
+            --font-body: 20px;
+            --font-benefit: 20px;
+            --font-node-name: 20px;
+            --font-node-desc: 18px;
+            --font-node-actors: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-weight: 700;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            background: var(--page-bg);
+            color: var(--text-primary);
+            font-size: var(--font-body);
+            font-family: Inter, "Noto Sans TC", "Segoe UI", sans-serif;
+        }
+
+        body {
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+
+        .app-shell {
+            width: 100vw;
+            max-width: none;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .main {
+            width: 100vw;
+            height: 100vh;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .page-section {
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            flex: 0 0 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page-section+.page-section {
+            border-top: 1px solid var(--line-ivory);
+        }
+
+        /* ── 結語頁 ── */
+        .closing-page {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: var(--page-bg);
+        }
+
+        .closing-deco {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .closing-deco--left {
+            width: clamp(300px, 40vw, 640px);
+            height: clamp(300px, 40vw, 640px);
+            left: -12%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: radial-gradient(circle, rgba(217, 119, 87, 0.14) 0%, transparent 70%);
+        }
+
+        .closing-deco--right {
+            width: clamp(240px, 30vw, 500px);
+            height: clamp(240px, 30vw, 500px);
+            right: -8%;
+            bottom: 10%;
+            background: radial-gradient(circle, rgba(195, 194, 169, 0.1) 0%, transparent 70%);
+        }
+
+        .closing-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+            text-align: center;
+            padding: 40px 48px;
+        }
+
+        .closing-eyebrow {
+            margin: 0;
+            font-size: 13px;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            opacity: 0.75;
+        }
+
+        .closing-quote {
+            margin: 0;
+            padding: 0;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .closing-line {
+            display: block;
+            font-size: clamp(28px, 4.2vw, 64px);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+
+        .closing-em {
+            font-style: normal;
+            color: var(--text-primary);
+        }
+
+        .closing-em--ai {
+            color: var(--accent-primary);
+        }
+
+        .closing-separator {
+            display: block;
+            width: 48px;
+            height: 2px;
+            background: var(--surface-border-strong);
+            border-radius: 2px;
+        }
+
+        .section-layout {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: minmax(140px, 5%) minmax(0, 95%);
+            border: 1px solid rgba(195, 194, 169, 0.34);
+            overflow: hidden;
+            background: rgba(31, 31, 30, 0.38);
+        }
+
+        .section-heading {
+            border-right: 1px solid var(--line-ivory);
+            padding: 20px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: rgba(31, 31, 30, 0.72);
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: clamp(20px, 2.1vw, 36px);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .section-body {
+            min-width: 0;
+            height: 100%;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .intro-pane {
+            height: 100%;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding: 20px;
+            background: transparent;
+        }
+
+        .workflow-section-wrapper {
+            display: block;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+
+        .workflow-section-wrapper h1 {
+            margin: 0;
+            font-size: var(--font-title);
+            line-height: 1.04;
+            letter-spacing: -0.03em;
+        }
+
+        .workflow-split {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: minmax(0, 80%) minmax(240px, 20%);
+            gap: 12px;
+        }
+
+        .sidebar,
+        .content,
+        .card {
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            background: var(--surface-bg);
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .eyebrow {
+            color: var(--accent-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: var(--font-title);
+            line-height: 1.04;
+            letter-spacing: -0.03em;
+        }
+
+        .hero p {
+            margin: 14px 0 0;
+            color: var(--text-secondary);
+            max-width: 760px;
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .hero-meta {
+            display: grid;
+            gap: 10px;
+            min-width: 260px;
+            text-align: right;
+        }
+
+        .meta-chip {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .content {
+            border-radius: 0;
+            padding: 20px;
+            min-height: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .content-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: start;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 18px;
+        }
+
+        .content-head h2 {
+            margin: 0;
+            font-size: var(--font-subtitle);
+        }
+
+        .content-head p {
+            margin: 10px 0 0;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .status-pill {
+            align-self: start;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(231, 196, 156, 0.56);
+            color: var(--text-primary);
+            background: var(--accent-soft);
+            white-space: nowrap;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .info-card {
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(31, 31, 30, 0.94);
+            padding: 14px;
+            min-height: 106px;
+        }
+
+        .info-label {
+            font-size: 16px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .section-title {
+            margin: 0 0 12px;
+            font-size: 30px;
+            letter-spacing: -0.02em;
+            color: var(--accent-primary);
+        }
+
+        .workflow-stage {
+            display: grid;
+            gap: 12px;
+        }
+
+        .workflow-canvas {
+            position: relative;
+            border-radius: var(--radius-xl);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(31, 31, 30, 0.92);
+            overflow: hidden;
+            min-height: 250px;
+        }
+
+        .workflow-scroll {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 20px 14px 26px;
+        }
+
+        .workflow-flow {
+            position: relative;
+            min-width: max-content;
+            min-height: 180px;
+        }
+
+        .workflow-connector-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        .workflow-track {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 36px;
+            padding: 10px 14px;
+            z-index: 2;
+        }
+
+        .workflow-connector {
+            position: absolute;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .workflow-node {
+            position: relative;
+            width: 280px;
+            min-height: 108px;
+            border-radius: 14px;
+            border: 1px solid var(--node-border);
+            background: var(--node-bg);
+            box-shadow: var(--shadow-soft);
+            padding: 12px 12px 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+            z-index: 2;
+            flex: 0 0 auto;
+        }
+
+        .workflow-node:hover {
+            transform: translateY(-2px);
+            border-color: var(--node-border-hover);
+            background: var(--node-bg-hover);
+        }
+
+        .workflow-node.is-active {
+            border-color: var(--node-border-active);
+            background: var(--node-bg-active);
+            box-shadow: 0 0 0 1px rgba(231, 196, 156, 0.26), 0 12px 28px rgba(0, 0, 0, 0.28);
+        }
+
+        .workflow-node .node-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            justify-content: center;
+        }
+
+        .workflow-node .node-index {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(176, 123, 74, 0.3);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 700;
+            flex: 0 0 auto;
+        }
+
+        .workflow-node .node-title {
+            margin: 0;
+            font-size: var(--font-node-name);
+            line-height: 1.45;
+            color: #F5F4F0;
+        }
+
+        .workflow-node .node-type {
+            display: inline-flex;
+            margin-top: 6px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: var(--font-node-actors);
+            color: #C3C2A9;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .workflow-node .node-desc {
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-size: var(--font-node-desc);
+            min-height: 32px;
+        }
+
+        .node-port {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #151515;
+            border: 2px solid var(--line-ivory);
+            box-shadow: 0 0 0 3px rgba(21, 21, 21, 0.72);
+        }
+
+        .node-port.input {
+            left: -6px;
+        }
+
+        .node-port.output {
+            right: -6px;
+        }
+
+        .workflow-detail {
+            border-radius: var(--radius-xl);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px;
+        }
+
+        .node-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: var(--overlay-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 50;
+        }
+
+        .node-modal.is-open {
+            display: flex;
+        }
+
+        .node-modal-card {
+            width: min(920px, 100%);
+            max-height: min(86vh, 820px);
+            overflow: auto;
+            border-radius: 24px;
+            border: 1px solid rgba(141, 164, 255, 0.2);
+            background: var(--surface-bg-strong);
+            box-shadow: var(--shadow-strong);
+            padding: 20px;
+        }
+
+        .node-modal-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .node-modal-head h3 {
+            margin: 0;
+            font-size: var(--font-subtitle);
+            letter-spacing: -0.02em;
+        }
+
+        .node-modal-head p {
+            margin: 8px 0 0;
+            color: #D8D6CF;
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .node-modal-close {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border-radius: 999px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+
+        .workflow-detail-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: start;
+            margin-bottom: 14px;
+        }
+
+        .workflow-detail-head h3 {
+            margin: 0;
+            font-size: var(--font-subtitle);
+        }
+
+        .workflow-detail-head p {
+            margin: 8px 0 0;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .workflow-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail-card {
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.14);
+        }
+
+        .detail-card strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-size: var(--font-body);
+        }
+
+        .detail-card ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #D8D6CF;
+            line-height: 1.65;
+            font-size: var(--font-body);
+        }
+
+        .step-meta {
+            color: #D8D6CF;
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .sidebar {
+            border-radius: 0;
+            padding: 18px;
+            position: static;
+            align-self: start;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            height: 100%;
+            max-height: none;
+            overflow: auto;
+            background: var(--surface-bg);
+        }
+
+        .sidebar h2 {
+            margin: 0;
+            font-size: var(--font-subtitle);
+        }
+
+        .sidebar p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .workflow-list {
+            display: grid;
+            gap: 10px;
+            padding-right: 4px;
+            border-radius: 12px;
+        }
+
+        .workflow-btn {
+            margin: 4px;
+            text-align: left;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: #D8D6CF;
+            border-radius: 18px;
+            padding: 14px;
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .workflow-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(231, 196, 156, 0.52);
+            background: rgba(176, 123, 74, 0.16);
+        }
+
+        .workflow-btn.is-active {
+            border-color: var(--surface-border-strong);
+            background: rgba(217, 119, 87, 0.24);
+            box-shadow: inset 0 0 0 1px rgba(231, 196, 156, 0.2);
+        }
+
+        .workflow-btn .name {
+            display: block;
+            font-size: var(--font-node-name);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .workflow-btn .summary {
+            display: block;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: var(--font-body);
+        }
+
+        .workflow-btn .tag {
+            display: inline-flex;
+            margin-top: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .relationships,
+        .benefits {
+            display: grid;
+            gap: 10px;
+        }
+
+        .relationship-item,
+        .benefit-item {
+            display: flex;
+            gap: 12px;
+            align-items: start;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.025);
+            color: #D8D6CF;
+            line-height: 1.6;
+        }
+
+        .benefit-item {
+            font-size: var(--font-benefit);
+        }
+
+        .badge {
+            flex: 0 0 auto;
+            min-width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(176, 123, 74, 0.24);
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .intro-section {
+            border-radius: 0;
+            border: 0;
+            background: rgba(31, 31, 30, 0.92);
+            padding: 20px;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: none;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .intro-section h1 {
+            margin: 0 0 16px;
+            font-size: var(--font-title);
+            letter-spacing: -0.02em;
+        }
+
+        .intro-section h2 {
+            margin: 0 0 16px;
+            font-size: var(--font-subtitle);
+            letter-spacing: -0.02em;
+        }
+
+        .intro-section p {
+            margin: 0 0 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--font-body);
+        }
+
+        .intro-section p:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .intro-visual {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .ai-visual-stage {
+            position: relative;
+            width: 100%;
+            min-height: 420px;
+            height: clamp(420px, 56vw, 760px);
+            border-radius: calc(var(--radius-xl) - 1px);
+            background:
+                radial-gradient(circle at 50% 58%, rgba(22, 20, 20, 0.92) 0%, rgba(19, 17, 17, 0.98) 48%, rgba(10, 9, 9, 1) 100%);
+            isolation: isolate;
+        }
+
+        .ai-visual-stage::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 18% 88%, rgba(213, 123, 88, 0.09), transparent 38%),
+                radial-gradient(circle at 80% 14%, rgba(148, 158, 227, 0.08), transparent 34%),
+                repeating-linear-gradient(90deg,
+                    rgba(255, 255, 255, 0.012) 0,
+                    rgba(255, 255, 255, 0.012) 1px,
+                    rgba(0, 0, 0, 0) 1px,
+                    rgba(0, 0, 0, 0) 9px);
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ai-visual-ring {
+            position: absolute;
+            width: min(95vw, 900px);
+            height: min(95vw, 900px);
+            border-radius: 50%;
+            border: 2px solid rgba(195, 194, 169, 0.72);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            box-shadow: 0 0 26px rgba(195, 194, 169, 0.12);
+        }
+
+        .ai-visual-axis {
+            position: absolute;
+            left: min(11vw, 160px);
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: linear-gradient(to bottom,
+                    rgba(195, 194, 169, 0.28),
+                    rgba(195, 194, 169, 0.9) 14%,
+                    rgba(195, 194, 169, 0.9) 86%,
+                    rgba(195, 194, 169, 0.22));
+            z-index: 2;
+        }
+
+        .ai-visual-dot {
+            position: absolute;
+            top: 50%;
+            width: clamp(132px, 17vw, 230px);
+            height: clamp(132px, 17vw, 230px);
+            border-radius: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+        }
+
+        .ai-visual-dot.ai {
+            left: 34%;
+            background: radial-gradient(circle at 36% 32%, #8f9fda 0%, #7589cf 62%, #5c72b5 100%);
+            box-shadow: 0 0 42px rgba(133, 151, 221, 0.34);
+        }
+
+        .ai-visual-dot.automation {
+            left: 60%;
+            background: radial-gradient(circle at 35% 30%, #ef8b65 0%, #df6f51 62%, #c5583f 100%);
+            box-shadow: 0 0 42px rgba(226, 115, 83, 0.34);
+        }
+
+        .ai-visual-spark {
+            position: absolute;
+            right: clamp(18px, 2.8vw, 36px);
+            bottom: clamp(16px, 2.6vw, 34px);
+            width: clamp(20px, 3.2vw, 30px);
+            height: clamp(20px, 3.2vw, 30px);
+            z-index: 3;
+        }
+
+        .ai-visual-spark::before,
+        .ai-visual-spark::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(195, 194, 169, 0.82);
+            border-radius: 999px;
+        }
+
+        .ai-visual-spark::before {
+            width: 100%;
+            height: 1.6px;
+        }
+
+        .ai-visual-spark::after {
+            width: 1.6px;
+            height: 100%;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            margin-top: 14px;
+        }
+
+        .comparison-item {
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 18px;
+            overflow: hidden;
+        }
+
+        .comparison-item-title {
+            font-size: var(--font-node-name);
+            color: var(--accent-primary);
+            margin: 0 0 16px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .comparison-item-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .comparison-side {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.01);
+            padding: 14px;
+        }
+
+        .comparison-side h4 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .comparison-side-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .comparison-side.automation h4 .comparison-side-badge {
+            background: rgba(176, 123, 74, 0.24);
+            color: var(--text-primary);
+        }
+
+        .comparison-side.ai h4 .comparison-side-badge {
+            background: rgba(217, 119, 87, 0.24);
+            color: var(--accent-primary);
+        }
+
+        .comparison-section {
+            margin-bottom: 12px;
+        }
+
+        .comparison-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .comparison-label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .comparison-content {
+            font-size: var(--font-body);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .comparison-content:last-child {
+            margin-bottom: 0;
+        }
+
+        .comparison-conclusion {
+            border-radius: 14px;
+            border: 1px solid rgba(217, 119, 87, 0.2);
+            background: rgba(217, 119, 87, 0.06);
+            padding: 16px;
+            margin-top: 18px;
+        }
+
+        .comparison-conclusion h3 {
+            margin: 0 0 12px;
+            font-size: var(--font-node-name);
+            color: var(--text-primary);
+        }
+
+        .comparison-conclusion p {
+            margin: 8px 0 0;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: var(--font-body);
+        }
+
+        .comparison-conclusion p:first-of-type {
+            margin-top: 0;
+        }
+
+        .dot-nav {
+            position: fixed;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 8px;
+            border-radius: 999px;
+            background: rgba(15, 15, 14, 0.56);
+            border: 1px solid rgba(195, 194, 169, 0.24);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .dot-nav-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(195, 194, 169, 0.72);
+            background: rgba(195, 194, 169, 0.2);
+            cursor: pointer;
+            transition: transform 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+            padding: 0;
+        }
+
+        .dot-nav-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .dot-nav-btn.is-active {
+            background: #d97757;
+            box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.2);
+            border-color: #ef9a7d;
+        }
+
+        .video-placeholder {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .video-placeholder iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-placeholder-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: var(--font-body);
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* === Page 1: Commons Venn Diagram Layout === */
+        .commons-stage {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(10px, 1.4vh, 22px);
+            padding: clamp(14px, 1.8vw, 30px) clamp(20px, 3vw, 48px);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .commons-eyebrow {
+            margin: 0;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            font-size: 11px;
+        }
+
+        .commons-heading {
+            margin: 0;
+            font-size: clamp(18px, 2vw, 32px);
+            letter-spacing: -0.025em;
+            color: #F5F4F0;
+            line-height: 1.2;
+        }
+
+        .commons-diagram-area {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .commons-outer-ring {
+            width: clamp(700px, 70vw, 1400px);
+            height: clamp(800px, 80vw, 1500px);
+            border-radius: 50%;
+            border: 2px solid rgba(195, 194, 169, 0.36);
+            background: radial-gradient(circle at 50% 50%, rgba(195, 194, 169, 0.04), transparent 68%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: clamp(60px, 4vw, 100px);
+            padding: 23% 20% 13%;
+            position: relative;
+            box-shadow: 0 0 80px rgba(195, 194, 169, 0.05), inset 0 0 60px rgba(195, 194, 169, 0.02);
+            overflow: hidden;
+        }
+
+        .commons-venn-group {
+            display: flex;
+            align-items: center;
+            gap: clamp(60px, 4vw, 80px);
+            position: relative;
+
+        }
+
+        .commons-circle {
+            flex: 0 0 auto;
+            width: clamp(80px, 16vw, 250px);
+            height: clamp(80px, 16vw, 250px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .commons-automation-circle {
+            background: radial-gradient(circle at 36% 32%, #D09A4E 0%, #D09A4E 62%, #D09A4E 100%);
+            box-shadow: 0 0 48px rgba(226, 115, 83, 0.36);
+            z-index: 2;
+        }
+
+        .commons-ai-circle {
+            background: radial-gradient(circle at 36% 32%, #5B76A6 0%, #5B76A6 62%, #5B76A6 100%);
+            box-shadow: 0 0 48px rgba(133, 151, 221, 0.36);
+            z-index: 3;
+        }
+
+        .commons-circle-name {
+            font-size: clamp(24px, 6vw, 32px);
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.5;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .commons-venn-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .commons-flow-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(18, 18, 17, 0.86);
+            border: 1px solid rgba(195, 194, 169, 0.30);
+            border-radius: 999px;
+            padding: 4px 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .commons-flow-text {
+            font-size: clamp(9px, 0.9vw, 12px);
+            color: var(--text-primary);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .commons-flow-arrow {
+            font-size: clamp(11px, 1.1vw, 14px);
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+
+        .commons-comparisons {
+            width: 180%;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.2vw, 14px);
+        }
+
+        .commons-comp-item {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0 clamp(10px, 1.8vw, 18px);
+            align-items: start;
+        }
+
+        .commons-comp-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 0 6px;
+            text-align: center;
+            min-width: clamp(70px, 9vw, 110px);
+        }
+
+        .commons-comp-category {
+            font-size: 26px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-primary);
+            white-space: nowrap;
+        }
+
+        .commons-comp-topic {
+            font-size: 20px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .commons-comp-col {
+            padding: clamp(6px, 0.7vw, 10px);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .commons-comp-col ul {
+            margin: 0;
+            padding-left: 14px;
+            list-style-type: disc;
+            color: #D8D6CF;
+            font-size: var(--font-body);
+            line-height: 1.6;
+        }
+
+        /* === Self Introduction Page === */
+        .self-intro-page-body {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: minmax(0, 35%) minmax(0, 65%);
+            overflow: hidden;
+            border: 1px solid rgba(195, 194, 169, 0.34);
+            background: rgba(31, 31, 30, 0.38);
+        }
+
+        .self-intro-left {
+            padding: clamp(32px, 4vw, 60px) clamp(36px, 5vw, 72px);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--surface-border);
+            overflow: hidden;
+        }
+
+        .self-intro-page-title {
+            margin: 0 0 clamp(28px, 3vh, 40px);
+            font-size: 66px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+
+        .self-intro-identity {
+            display: flex;
+            flex-direction: row;
+            gap: 4px;
+            margin-bottom: clamp(20px, 3vh, 42px);
+            align-items: flex-end;
+        }
+
+        .self-intro-name {
+            margin: 0;
+            font-size: clamp(28px, 2.6vw, 46px);
+            letter-spacing: -0.04em;
+            line-height: 1.0;
+            color: #F5F4F0;
+            margin-right: 10px;
+        }
+
+        .self-intro-dept {
+            font-size: clamp(14px, 1.4vw, 20px);
+            color: var(--text-secondary);
+            letter-spacing: 0.06em;
+        }
+
+        .self-intro-table {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .self-intro-row {
+            display: grid;
+            grid-template-columns: minmax(100px, 22%) minmax(0, 78%);
+            gap: 16px;
+            padding: clamp(10px, 1.4vh, 18px) 0;
+            border-top: 1px solid var(--surface-border);
+            align-items: start;
+        }
+
+        .self-intro-row--section-head .self-intro-row-label {
+            color: var(--text-primary);
+            font-size: 26px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .self-intro-row--skills {
+            border-top: none;
+            padding-top: clamp(10px, 1.6vh, 18px);
+        }
+
+        .self-intro-row-label {
+            color: #D8D6CF;
+            font-size: var(--font-body);
+            line-height: 1.6;
+            padding-top: 2px;
+        }
+
+        .self-intro-row-value {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .self-intro-row-desc {
+            color: #D8D6CF;
+            font-size: var(--font-body);
+            line-height: 1.65;
+        }
+
+        .self-intro-right {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .self-intro-skills-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .self-intro-skill-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.025);
+            color: #D8D6CF;
+            font-size: clamp(18px, 2vw, 24px);
+            line-height: 1.5;
+            margin: 6px 0;
+        }
+
+        .self-intro-skill-badge {
+            flex: 0 0 auto;
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: rgba(176, 123, 74, 0.24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .self-intro-visual-box {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            background: #0a0a09;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .self-intro-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+        }
+
+        .self-intro-visual-ring {
+            position: absolute;
+            width: min(80%, 480px);
+            height: min(80%, 480px);
+            border-radius: 50%;
+            border: 1.5px solid rgba(195, 194, 169, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .self-intro-visual-ring-inner {
+            position: absolute;
+            width: min(50%, 300px);
+            height: min(50%, 300px);
+            border-radius: 50%;
+            border: 1.5px solid rgba(195, 194, 169, 0.18);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .self-intro-visual-center {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .self-intro-visual-label {
+            font-size: clamp(32px, 4vw, 64px);
+            letter-spacing: -0.03em;
+            color: rgba(245, 244, 240, 0.9);
+        }
+
+        .self-intro-visual-sub {
+            font-size: clamp(11px, 1.1vw, 16px);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 1120px) {
+            .section-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto minmax(0, 1fr);
+            }
+
+            .section-heading {
+                border-right: 0;
+                border-bottom: 1px solid var(--line-ivory);
+                padding: 14px 16px;
+            }
+
+            .section-heading h2 {
+                font-size: clamp(18px, 3.2vw, 30px);
+            }
+
+            .workflow-split {
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+
+            .main,
+            .sidebar {
+                position: static;
+                max-height: none;
+            }
+
+            .overview-grid,
+            .workflow-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content,
+            .sidebar {
+                height: auto;
+                min-height: 0;
+            }
+
+            .sidebar {
+                overflow: visible;
+            }
+        }
+
+        @media (max-width: 960px),
+        (max-height: 760px) {
+            body {
+                overflow-y: auto;
+            }
+
+            .app-shell {
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+            }
+
+            .main {
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+                scroll-snap-type: none;
+            }
+
+            .page-section {
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+            }
+
+            .section-layout {
+                height: auto;
+                min-height: calc(100vh - 24px);
+            }
+
+            .section-body {
+                overflow: visible;
+            }
+
+            .dot-nav {
+                right: 10px;
+            }
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 0;
+            }
+
+            .content,
+            .sidebar {
+                padding: 18px;
+                border-radius: 0;
+            }
+
+            .app-shell {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .page-section {
+                padding: 10px;
+            }
+
+            .section-layout {
+                min-height: calc(100vh - 20px);
+            }
+
+            .ai-visual-stage {
+                min-height: 300px;
+                height: 56vw;
+            }
+
+            .ai-visual-axis {
+                left: 36px;
+            }
+
+            .ai-visual-dot.ai {
+                left: 30%;
+            }
+
+            .ai-visual-dot.automation {
+                left: 58%;
+            }
+
+            .dot-nav {
+                gap: 8px;
+                padding: 8px 7px;
+            }
+
+            .dot-nav-btn {
+                width: 10px;
+                height: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <main class="main">
+            <section class="page-section" id="scene-cover" aria-label="封面">
+                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    <h1
+                        style="margin:0;font-size:clamp(48px,7vw,96px);letter-spacing:-0.03em;color:#F5F4F0;text-align:center;">
+                        AI Agent 實務應用</h1>
+                </div>
+            </section>
+
+            <section class="page-section" id="scene-self-intro" aria-label="自我介紹">
+                <div class="self-intro-page-body" id="self-intro-layout"></div>
+            </section>
+
+            <section class="page-section intro-section intro-visual" id="scene-ai-vs-auto" aria-label="AI 與自動化視覺比較">
+                <div class="section-layout">
+                    <header class="section-heading">
+                        <h1>AI <br>的<br>定<br>義</h1>
+                    </header>
+                    <div class="section-body">
+                        <div class="commons-stage">
+                            <h2 class="commons-heading">AI 與自動化的差異</h2>
+                            <div class="commons-diagram-area">
+                                <div class="commons-outer-ring">
+                                    <div class="commons-venn-group">
+                                        <div class="commons-circle commons-automation-circle">
+                                            <span class="commons-circle-name">傳統<br>自動化</span>
+                                        </div>
+                                        <div class="commons-circle commons-ai-circle">
+                                            <span class="commons-circle-name">人工<br>智慧 AI</span>
+                                        </div>
+                                    </div>
+                                    <div class="commons-comparisons" id="comparisons-container"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section intro-section intro-visual" id="scene-intro-tool">
+                <div class="section-layout">
+                    <header class="section-heading">
+                        <h1>工<br>具<br>介<br>紹</h1>
+                    </header>
+                    <div class="section-body intro-pane">
+                        <h2 class="commons-heading">MaiAgent 介紹</h2>
+                        <p>MaiAgent 是一個強大的 AI Agent 工具平台，整合了先進的人工智慧技術和自動化能力。它幫助企業通過 AI 工具提升效率，優化業務流程，並實現數位轉型</p>
+                        <iframe
+                            src="https://seeccomtw.sharepoint.com/sites/SEECITPLACE/_layouts/15/embed.aspx?UniqueId=81992dab-a6ba-45bc-ab8a-35a0c3d52b35&embed=%7B%22ust%22%3Afalse%2C%22hv%22%3A%22CopyEmbedCode%22%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create"
+                            width="1280" height="720" frameborder="0" scrolling="no" allowfullscreen
+                            title="詳細介紹-AI Agent.mp4"></iframe>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section workflow-section-wrapper" id="scene-workflow-showcase">
+                <div class="section-layout">
+                    <header class="section-heading">
+                        <h1>應<br>用<br>範<br>例<br>場<br>景<br>介<br>紹</h1>
+                    </header>
+                    <div class="section-body workflow-split">
+                        <section class="content" aria-live="polite">
+                            <div class="content-head">
+                                <div>
+                                    <h2 class="commons-heading" id="workflow-title">應用場景</h2>
+                                    <p id="workflow-description">探索 MaiAgent 在各種業務場景中的實際應用，了解如何透過 AI 驅動的自動化解決方案提升您的業務效率。
+                                    </p>
+                                </div>
+                            </div>
+
+                            <section class="workflow-stage">
+                                <h3 class="section-title">流程圖</h3>
+                                <div class="workflow-canvas">
+                                    <div class="workflow-scroll" id="workflow-scroll">
+                                        <div class="workflow-flow" id="workflow-flow">
+                                            <div class="workflow-connector-layer" id="workflow-connectors"
+                                                aria-hidden="true">
+                                            </div>
+                                            <div class="workflow-track" id="workflow-track"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 class="section-title">價值</h3>
+                                <div class="benefits" id="benefits"></div>
+                            </section>
+                        </section>
+
+                        <aside class="sidebar">
+                            <div class="workflow-list" id="workflow-list"></div>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-section" id="scene-closing" aria-label="結語">
+                <div class="closing-page">
+                    <div class="closing-deco closing-deco--left" aria-hidden="true"></div>
+                    <div class="closing-deco closing-deco--right" aria-hidden="true"></div>
+                    <div class="closing-content">
+                        <p class="closing-eyebrow">Closing</p>
+                        <blockquote class="closing-quote">
+                            <span class="closing-line">
+                                自動化讓你的工作<em class="closing-em">『更快』</em>
+                            </span>
+                            <span class="closing-separator" aria-hidden="true"></span>
+                            <span class="closing-line">
+                                AI 讓你的決策<em class="closing-em closing-em--ai">『更聰明』</em>
+                            </span>
+                        </blockquote>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <nav class="dot-nav" aria-label="頁面區塊導覽">
+        <button class="dot-nav-btn is-active" type="button" data-target="scene-cover" aria-label="前往封面頁"></button>
+        <button class="dot-nav-btn" type="button" data-target="scene-self-intro" aria-label="前往自我介紹頁"></button>
+        <button class="dot-nav-btn" type="button" data-target="scene-ai-vs-auto" aria-label="前往第一頁：AI 與自動化視覺"></button>
+        <button class="dot-nav-btn" type="button" data-target="scene-intro-tool"
+            aria-label="前往第二頁：介紹 MaiAgent 工具"></button>
+        <button class="dot-nav-btn" type="button" data-target="scene-workflow-showcase"
+            aria-label="前往第三頁：應用範例場景介紹"></button>
+        <button class="dot-nav-btn" type="button" data-target="scene-closing" aria-label="前往結語頁"></button>
+    </nav>
+
+    <div class="node-modal" id="node-modal" aria-hidden="true">
+        <div class="node-modal-card" role="dialog" aria-modal="true" aria-labelledby="node-modal-title">
+            <div class="node-modal-head">
+                <div>
+                    <h3 id="node-modal-title"></h3>
+                    <p id="node-modal-description"></p>
+                </div>
+                <button class="node-modal-close" type="button" id="node-modal-close" aria-label="關閉視窗">✕</button>
+            </div>
+            <div class="workflow-detail-grid" id="node-modal-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const workflowList = document.getElementById('workflow-list');
+        const workflowCanvasEl = document.querySelector('.workflow-canvas');
+        const workflowScrollEl = document.getElementById('workflow-scroll');
+        const workflowFlowEl = document.getElementById('workflow-flow');
+        const workflowTrackEl = document.getElementById('workflow-track');
+        const workflowConnectorsEl = document.getElementById('workflow-connectors');
+        const benefitsEl = document.getElementById('benefits');
+        const nodeModalEl = document.getElementById('node-modal');
+        const nodeModalTitleEl = document.getElementById('node-modal-title');
+        const nodeModalDescriptionEl = document.getElementById('node-modal-description');
+        const nodeModalGridEl = document.getElementById('node-modal-grid');
+        const nodeModalCloseEl = document.getElementById('node-modal-close');
+        const mainScrollEl = document.querySelector('.main');
+        const pageSections = Array.from(document.querySelectorAll('.page-section'));
+        const dotNavButtons = Array.from(document.querySelectorAll('.dot-nav-btn'));
+
+        const titleEl = document.getElementById('workflow-title');
+        const descriptionEl = document.getElementById('workflow-description');
+        let activeStepIndex = 0;
+        let activeWorkflowId = '';
+
+        function themeColor(variableName, fallbackValue) {
+            const computedStyle = getComputedStyle(document.documentElement);
+            return computedStyle.getPropertyValue(variableName).trim() || fallbackValue;
+        }
+
+        function toArray(value) {
+            if (Array.isArray(value)) {
+                return value;
+            }
+            if (value === null || value === undefined || value === '') {
+                return [];
+            }
+            return [value];
+        }
+
+        function normalizeWorkflows(sourceData) {
+            const sourceFlows = Array.isArray(sourceData)
+                ? sourceData
+                : Array.isArray(sourceData?.flows)
+                    ? sourceData.flows
+                    : [];
+
+            return sourceFlows.map((flow, flowIndex) => {
+                const normalizedSteps = toArray(flow.steps).map((step, stepIndex) => ({
+                    title: step.step_name || step.title || `步驟 ${stepIndex + 1}`,
+                    description: step.description || '',
+                    actors: toArray(step.actors),
+                    input: toArray(step.input),
+                    process: step.process || '',
+                    output: toArray(step.output),
+                    state: step.status_transition || step.state || '',
+                    indicator: step.completion_indicator || step.indicator || ''
+                }));
+
+                const actorsFromSteps = [...new Set(normalizedSteps.flatMap((step) => step.actors))];
+                const fallbackScenario = actorsFromSteps.length
+                    ? `${actorsFromSteps.slice(0, 3).join('、')} 參與流程`
+                    : '流程執行場景';
+
+                return {
+                    id: flow.id || `workflow-${flowIndex + 1}`,
+                    name: flow.name || `Workflow ${flowIndex + 1}`,
+                    description: flow.description || '',
+                    scenario: flow.scenario || fallbackScenario,
+                    actors: toArray(flow.actors).length ? toArray(flow.actors) : actorsFromSteps,
+                    steps: normalizedSteps,
+                    benefits: toArray(flow.benefits)
+                };
+            });
+        }
+
+        async function loadWorkflowsFromFile() {
+            try {
+                const response = await fetch('./workflows.json', { cache: 'no-store' });
+                if (!response.ok) {
+                    throw new Error(`Failed to load workflows.json (${response.status})`);
+                }
+
+                const data = await response.json();
+                const normalized = normalizeWorkflows(data);
+                if (normalized.length) {
+                    workflows = normalized;
+                }
+            } catch (error) {
+                console.warn('loadWorkflowsFromFile fallback:', error);
+            }
+        }
+
+        async function initializeDashboard() {
+            await loadWorkflowsFromFile();
+            if (!workflows.length) {
+                return;
+            }
+
+            activeStepIndex = 0;
+            activeWorkflowId = workflows[0].id;
+            renderWorkflow(activeWorkflowId);
+        }
+
+        function renderList(activeId) {
+            workflowList.innerHTML = workflows.map((workflow) => `
+        <button class="workflow-btn ${workflow.id === activeId ? 'is-active' : ''}" data-id="${workflow.id}" type="button">
+          <span class="name">${workflow.name}</span>
+        </button>
+      `).join('');
+
+            workflowList.querySelectorAll('.workflow-btn').forEach((button) => {
+                button.addEventListener('click', () => renderWorkflow(button.dataset.id));
+            });
+        }
+
+        function renderNodeConnectors() {
+            const nodes = Array.from(workflowTrackEl.querySelectorAll('.workflow-node'));
+
+            if (!nodes.length) {
+                workflowConnectorsEl.innerHTML = '';
+                return;
+            }
+
+            const flowRect = workflowFlowEl.getBoundingClientRect();
+            const connectors = [];
+
+            for (let index = 0; index < nodes.length - 1; index += 1) {
+                const currentNode = nodes[index];
+                const nextNode = nodes[index + 1];
+                const currentRect = currentNode.getBoundingClientRect();
+                const nextRect = nextNode.getBoundingClientRect();
+
+                // 起點：上一節點下方中心；終點：下一節點左側中心
+                const startX = currentRect.left - flowRect.left + currentRect.width / 2;
+                const startY = currentRect.bottom - flowRect.top;
+                const endX = nextRect.left - flowRect.left;
+                const endY = nextRect.top - flowRect.top + nextRect.height / 2;
+
+                const minX = Math.min(startX, endX);
+                const maxX = Math.max(startX, endX);
+                const minY = Math.min(startY, endY);
+                const maxY = Math.max(startY, endY);
+                const horizontalPadding = 56;
+                const verticalPadding = 22;
+                const svgWidth = Math.max(maxX - minX + horizontalPadding * 2, 140);
+                const svgHeight = Math.max(maxY - minY + verticalPadding * 2, 90);
+
+                const svgLeft = minX - horizontalPadding;
+                const svgTop = minY - verticalPadding;
+
+                const x1 = startX - svgLeft;
+                const y1 = startY - svgTop;
+                const x2 = endX - svgLeft;
+                const y2 = endY - svgTop;
+
+                // 曲線：先向下，再平滑銜接到下一節點左側
+                const verticalSpan = Math.max(24, Math.abs(y2 - y1));
+                const verticalDrop = Math.min(
+                    Math.max(18, verticalSpan * 0.45),
+                    verticalSpan - 8
+                );
+                const horizontalLead = Math.max(26, Math.abs(x2 - x1) * 0.2);
+                const c1x = x1;
+                const c1y = y1 + verticalDrop;
+                const c2x = x2 - horizontalLead;
+                const c2y = y2;
+
+                const connectorColor = index === activeStepIndex - 1
+                    ? themeColor('--connector-active', 'rgba(250, 244, 235, 0.94)')
+                    : themeColor('--connector', 'rgba(242, 233, 220, 0.76)');
+
+                connectors.push(`
+                    <svg class="workflow-connector" style="left:${svgLeft}px; top:${svgTop}px; width:${svgWidth}px; height:${svgHeight}px;" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">
+                        <defs>
+                            <filter id="glow-${index}" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="2.2" result="blur"></feGaussianBlur>
+                                <feMerge>
+                                    <feMergeNode in="blur"></feMergeNode>
+                                    <feMergeNode in="SourceGraphic"></feMergeNode>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}" fill="none" stroke="${connectorColor}" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow-${index})"></path>
+                    </svg>
+                `);
+            }
+
+            workflowConnectorsEl.innerHTML = connectors.join('');
+        }
+
+        function renderNodeModal(step, stepNumber, stepTotal) {
+            const inputList = Array.isArray(step.input) ? step.input : [step.input];
+            const outputList = Array.isArray(step.output) ? step.output : [step.output];
+
+            nodeModalTitleEl.textContent = `${stepNumber}. ${step.title}`;
+            nodeModalDescriptionEl.textContent = step.description;
+            nodeModalGridEl.innerHTML = `
+                <div class="detail-card">
+                    <strong>角色</strong>
+                    <div class="step-meta">${step.actors.join('、')}</div>
+                </div>
+                <div class="detail-card">
+                    <strong>輸入</strong>
+                    <ul>${inputList.map((item) => `<li>${item}</li>`).join('')}</ul>
+                </div>
+                <div class="detail-card">
+                    <strong>流程</strong>
+                    <div class="step-meta">${step.process}</div>
+                </div>
+                <div class="detail-card">
+                    <strong>輸出</strong>
+                    <ul>${outputList.map((item) => `<li>${item}</li>`).join('')}</ul>
+                </div>
+            `;
+        }
+
+        function openNodeModal(step, stepNumber, stepTotal) {
+            renderNodeModal(step, stepNumber, stepTotal);
+            nodeModalEl.classList.add('is-open');
+            nodeModalEl.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeNodeModal() {
+            nodeModalEl.classList.remove('is-open');
+            nodeModalEl.setAttribute('aria-hidden', 'true');
+        }
+
+        function renderWorkflowNodes(workflow) {
+            workflowTrackEl.innerHTML = workflow.steps.map((step, index) => `
+                <button class="workflow-node ${index === activeStepIndex ? 'is-active' : ''}" style="margin-left: ${index * 240}px;" type="button" data-step-index="${index}">
+                    <span class="node-port input"></span>
+                    <span class="node-port output"></span>
+                    <div class="node-top">
+                        <h4 class="node-title">${step.title}</h4>
+                    </div>
+                    <span class="node-type">${step.actors.join(' / ')}</span>
+                </button>
+            `).join('');
+
+            workflowTrackEl.querySelectorAll('.workflow-node').forEach((node) => {
+                node.addEventListener('click', () => {
+                    activeStepIndex = Number(node.dataset.stepIndex);
+                    renderWorkflow(workflow.id);
+                    openNodeModal(workflow.steps[activeStepIndex], activeStepIndex + 1, workflow.steps.length);
+                });
+            });
+
+            requestAnimationFrame(() => renderNodeConnectors());
+        }
+
+        function renderWorkflow(id) {
+            const workflow = workflows.find((item) => item.id === id) || workflows[0];
+            if (!workflow) {
+                return;
+            }
+            activeWorkflowId = workflow.id;
+
+            titleEl.textContent = workflow.name;
+            descriptionEl.textContent = workflow.description;
+
+            if (activeStepIndex >= workflow.steps.length) {
+                activeStepIndex = 0;
+            }
+
+            renderWorkflowNodes(workflow);
+            const benefits = Array.isArray(workflow.benefits) ? workflow.benefits : [];
+            benefitsEl.innerHTML = benefits.map((item, index) => `
+        <div class="benefit-item">
+          <span class="badge">${index + 1}</span>
+          <span>${item}</span>
+        </div>
+      `).join('');
+
+            renderList(workflow.id);
+        }
+
+        function setActiveDot(targetId) {
+            dotNavButtons.forEach((button) => {
+                button.classList.toggle('is-active', button.dataset.target === targetId);
+            });
+        }
+
+        function initDotNavigation() {
+            dotNavButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const targetSection = document.getElementById(button.dataset.target);
+                    if (!targetSection) {
+                        return;
+                    }
+
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setActiveDot(button.dataset.target);
+                });
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                let maxEntry = null;
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    if (!maxEntry || entry.intersectionRatio > maxEntry.intersectionRatio) {
+                        maxEntry = entry;
+                    }
+                });
+
+                if (maxEntry?.target?.id) {
+                    setActiveDot(maxEntry.target.id);
+                }
+            }, {
+                root: mainScrollEl,
+                threshold: [0.5, 0.75, 0.9]
+            });
+
+            pageSections.forEach((section) => observer.observe(section));
+        }
+
+        async function loadPrefaceData() {
+            try {
+                const response = await fetch('./preface.json', { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Failed to load preface.json (${response.status})`);
+                const data = await response.json();
+                renderComparisons(data);
+            } catch (error) {
+                console.warn('loadPrefaceData error:', error);
+            }
+        }
+
+        function renderComparisons(data) {
+            const container = document.getElementById('comparisons-container');
+            if (!container || !Array.isArray(data.comparisons)) return;
+            container.innerHTML = data.comparisons.map(comp => `
+                <div class="commons-comp-item">
+                    <div class="commons-comp-col">
+                        <ul><li>${comp.automation.example}</li></ul>
+                    </div>
+                    <div class="commons-comp-center">
+                        <span class="commons-comp-category">${comp.category}</span>
+                        <span class="commons-comp-topic">${comp.topic}</span>
+                    </div>
+                    <div class="commons-comp-col">
+                        <ul><li>${comp.ai.example}</li></ul>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadSelfIntroduction() {
+            try {
+                const response = await fetch('./self_Introduction.json', { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Failed to load self_Introduction.json (${response.status})`);
+                const data = await response.json();
+                renderSelfIntroduction(data);
+            } catch (error) {
+                console.warn('loadSelfIntroduction error:', error);
+            }
+        }
+
+        function renderSelfIntroduction(data) {
+            const container = document.getElementById('self-intro-layout');
+            if (!container) return;
+
+            const responsibilities = Array.isArray(data.responsibilities) ? data.responsibilities : [];
+            const skills = Array.isArray(data.skills) ? data.skills : [];
+
+            const rowsHTML = responsibilities.map(item => `
+                <div class="self-intro-row">
+                    <span class="self-intro-row-label">${item.poject || ''}</span>
+                    <div class="self-intro-row-value">
+                        <span class="self-intro-row-desc">${item.description || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const skillsHTML = skills.map((skill, index) => `
+                <div class="self-intro-skill-item">
+                    <span class="self-intro-skill-badge">${index + 1}</span>
+                    <span>${skill}</span>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="self-intro-right">
+                    <div class="self-intro-visual-box">
+                        <img src="./self_Introduction.png" alt="自我介紹" class="self-intro-photo">
+                    </div>
+                </div>
+                <div class="self-intro-left">
+                    <p class="self-intro-page-title">自我介紹</p>
+                    <div class="self-intro-identity">
+                        <h1 class="self-intro-name">${data.name || ''}</h1>
+                        <span class="self-intro-dept">${data.department || ''}</span>
+                    </div>
+                    <div class="self-intro-table">
+                        <div class="self-intro-row self-intro-row--section-head">
+                            <span class="self-intro-row-label">負責系統</span>
+                            <span class="self-intro-row-value"></span>
+                        </div>
+                        ${rowsHTML}
+                        <div class="self-intro-row self-intro-row--section-head">
+                            <span class="self-intro-row-label">技能專長</span>
+                            <span class="self-intro-row-value"></span>
+                        </div>
+                        <div class="self-intro-row self-intro-row--skills">
+                            <span class="self-intro-row-label"></span>
+                            <div class="self-intro-skills-list">${skillsHTML}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        initializeDashboard();
+        initDotNavigation();
+        loadPrefaceData();
+        loadSelfIntroduction();
+
+        nodeModalCloseEl.addEventListener('click', closeNodeModal);
+        nodeModalEl.addEventListener('click', (event) => {
+            if (event.target === nodeModalEl) {
+                closeNodeModal();
+            }
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeNodeModal();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (!activeWorkflowId) {
+                return;
+            }
+            renderWorkflow(activeWorkflowId);
+        });
+    </script>
+</body>
+
+</html>
