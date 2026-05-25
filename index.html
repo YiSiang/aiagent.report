@@ -200,7 +200,7 @@
             width: 100%;
             height: 100%;
             display: grid;
-            grid-template-columns: minmax(140px, 5%) minmax(0, 95%);
+            grid-template-columns: minmax(140px, 10%) minmax(0, 90%);
             border: 1px solid rgba(195, 194, 169, 0.34);
             overflow: hidden;
             background: rgba(31, 31, 30, 0.38);
@@ -788,6 +788,7 @@
             margin: 0 0 16px;
             font-size: var(--font-title);
             letter-spacing: -0.02em;
+            text-align: center;
         }
 
         .intro-section h2 {
@@ -1654,19 +1655,19 @@
             <section class="page-section intro-section intro-visual" id="scene-ai-vs-auto" aria-label="AI 與自動化視覺比較">
                 <div class="section-layout">
                     <header class="section-heading">
-                        <h1>AI <br>的<br>定<br>義</h1>
+                        <h1>從<br>AI<br>到<br><span style="font-size: 38px;">AI Agent</span></h1>
                     </header>
                     <div class="section-body">
                         <div class="commons-stage">
-                            <h2 class="commons-heading">AI 與自動化的差異</h2>
+                            <h2 class="commons-heading" id="preface-title"></h2>
                             <div class="commons-diagram-area">
                                 <div class="commons-outer-ring">
                                     <div class="commons-venn-group">
                                         <div class="commons-circle commons-automation-circle">
-                                            <span class="commons-circle-name">傳統<br>自動化</span>
+                                            <span class="commons-circle-name">一般 AI</span>
                                         </div>
                                         <div class="commons-circle commons-ai-circle">
-                                            <span class="commons-circle-name">人工<br>智慧 AI</span>
+                                            <span class="commons-circle-name">AI Agent</span>
                                         </div>
                                     </div>
                                     <div class="commons-comparisons" id="comparisons-container"></div>
@@ -1741,14 +1742,13 @@
                     <div class="closing-deco closing-deco--left" aria-hidden="true"></div>
                     <div class="closing-deco closing-deco--right" aria-hidden="true"></div>
                     <div class="closing-content">
-                        <p class="closing-eyebrow">Closing</p>
                         <blockquote class="closing-quote">
                             <span class="closing-line">
-                                自動化讓你的工作<em class="closing-em">『更快』</em>
+                                <em class="closing-em">『AI』</em>回答問題
                             </span>
                             <span class="closing-separator" aria-hidden="true"></span>
                             <span class="closing-line">
-                                AI 讓你的決策<em class="closing-em closing-em--ai">『更聰明』</em>
+                                <em class="closing-em closing-em--ai">『AI Agent』</em>幫你解決問題
                             </span>
                         </blockquote>
                     </div>
@@ -2110,6 +2110,8 @@
         function renderComparisons(data) {
             const container = document.getElementById('comparisons-container');
             if (!container || !Array.isArray(data.comparisons)) return;
+            const titleEl = document.getElementById('preface-title');
+            if (titleEl && data.title) titleEl.textContent = data.title;
             container.innerHTML = data.comparisons.map(comp => `
                 <div class="commons-comp-item">
                     <div class="commons-comp-col">
