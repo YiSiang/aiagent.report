@@ -400,7 +400,31 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(31, 31, 30, 0.92);
             overflow: hidden;
-            min-height: 250px;
+            min-height: clamp(420px, 62vh, 780px);
+        }
+
+        .workflow-canvas--image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: rgba(16, 16, 16, 0.9);
+        }
+
+        .workflow-diagram-image {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            object-fit: cover;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        .workflow-image-fallback {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 16px;
+            letter-spacing: 0.04em;
         }
 
         .workflow-scroll {
@@ -1804,23 +1828,16 @@
                             </div>
 
                             <section class="workflow-stage">
-                                <h3 class="section-title">流程圖</h3>
-                                <div class="workflow-canvas">
-                                    <div class="workflow-scroll" id="workflow-scroll">
-                                        <div class="workflow-flow" id="workflow-flow">
-                                            <div class="workflow-connector-layer" id="workflow-connectors"
-                                                aria-hidden="true">
-                                            </div>
-                                            <div class="workflow-track" id="workflow-track"></div>
-                                        </div>
-                                    </div>
+                                <div class="workflow-canvas workflow-canvas--image">
+                                    <img class="workflow-diagram-image" id="workflow-image" alt="流程圖">
+                                    <p class="workflow-image-fallback" id="workflow-image-fallback" hidden>此場景尚未提供流程圖圖片</p>
                                 </div>
                             </section>
 
-                            <section>
+                            <!-- <section>
                                 <h3 class="section-title">價值</h3>
                                 <div class="benefits" id="benefits"></div>
-                            </section>
+                            </section> -->
                         </section>
 
                         <aside class="sidebar">
@@ -1882,6 +1899,8 @@
         const workflowFlowEl = document.getElementById('workflow-flow');
         const workflowTrackEl = document.getElementById('workflow-track');
         const workflowConnectorsEl = document.getElementById('workflow-connectors');
+        const workflowImageEl = document.getElementById('workflow-image');
+        const workflowImageFallbackEl = document.getElementById('workflow-image-fallback');
         const benefitsEl = document.getElementById('benefits');
         const nodeModalEl = document.getElementById('node-modal');
         const nodeModalTitleEl = document.getElementById('node-modal-title');
@@ -1943,8 +1962,34 @@
                     scenario: flow.scenario || fallbackScenario,
                     actors: toArray(flow.actors).length ? toArray(flow.actors) : actorsFromSteps,
                     steps: normalizedSteps,
-                    benefits: toArray(flow.benefits)
+                    benefits: toArray(flow.benefits),
+                    image: flow.image || ''
                 };
+            });
+        }
+
+        function renderWorkflowImage(workflow) {
+            if (!workflowImageEl || !workflowImageFallbackEl) {
+                return;
+            }
+
+            if (workflow.image) {
+                workflowImageEl.src = `./${workflow.image}`;
+                workflowImageEl.alt = `${workflow.name} 流程圖`;
+                workflowImageEl.hidden = false;
+                workflowImageFallbackEl.hidden = true;
+                return;
+            }
+
+            workflowImageEl.removeAttribute('src');
+            workflowImageEl.hidden = true;
+            workflowImageFallbackEl.hidden = false;
+        }
+
+        if (workflowImageEl && workflowImageFallbackEl) {
+            workflowImageEl.addEventListener('error', () => {
+                workflowImageEl.hidden = true;
+                workflowImageFallbackEl.hidden = false;
             });
         }
 
@@ -2137,14 +2182,16 @@
                 activeStepIndex = 0;
             }
 
-            renderWorkflowNodes(workflow);
-            const benefits = Array.isArray(workflow.benefits) ? workflow.benefits : [];
-            benefitsEl.innerHTML = benefits.map((item, index) => `
+            renderWorkflowImage(workflow);
+                        const benefits = Array.isArray(workflow.benefits) ? workflow.benefits : [];
+                        if (benefitsEl) {
+                                benefitsEl.innerHTML = benefits.map((item, index) => `
         <div class="benefit-item">
           <span class="badge">${index + 1}</span>
           <span>${item}</span>
         </div>
       `).join('');
+                        }
 
             renderList(workflow.id);
         }
